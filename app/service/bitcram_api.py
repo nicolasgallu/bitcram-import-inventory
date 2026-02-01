@@ -1,10 +1,10 @@
 import requests
 import json
 import pandas as pd
-from app.utils.logger import logger
 import datetime
+from app.utils.logger import logger
 
-def checkout(url_bitcrm, checkout_number, token):
+def get_checkout(url_bitcrm, checkout_number, token):
 
     logger.info("Requesting checkout & warehouse info.")
     checkout_resp = requests.get(
@@ -18,9 +18,11 @@ def checkout(url_bitcrm, checkout_number, token):
     warehouse_id = checkout.get("warehouse", {}).get("id")
     logger.info("checkout & warehouse created.")
     return checkout_id, warehouse_id
+
+
 #------------------------------------------------------------------
 
-def price_list(url_bitcrm, checkout_id, token):
+def get_price_list(url_bitcrm, checkout_id, token):
     
     logger.info("Requesting price list info.")
     catalog_response = requests.get(
@@ -30,15 +32,17 @@ def price_list(url_bitcrm, checkout_id, token):
     catalog_response.raise_for_status()
     catalog = catalog_response.json().get('items')
     df_catalog = pd.DataFrame([
-        {"id":i.pop('product_id'),
+        {"id":str(i.pop('product_id')),
          "data":json.dumps(i)
          } 
          for i in catalog])
     logger.info("df catalog (from price list) created.")
     return df_catalog
+
+
 #------------------------------------------------------------------
 
-def stock(url_bitcrm, warehouse_id, token):
+def get_stock(url_bitcrm, warehouse_id, token):
 
     logger.info("Requesting stock info.")
     stock_response = requests.get(
@@ -51,7 +55,7 @@ def stock(url_bitcrm, warehouse_id, token):
 
     stock = stock_response.json().get("items", [])
     df_stock = pd.DataFrame([
-        {"id": item.get("product", {}).get("id"),
+        {"id": str(item.get("product", {}).get("id")),
          "stock": item.get("product_balance", 0)
         } 
         for item in stock
@@ -60,7 +64,7 @@ def stock(url_bitcrm, warehouse_id, token):
     return df_stock
 #------------------------------------------------------------------
 
-def items_complete(df_catalog, df_stock):
+def get_items_complete(df_catalog, df_stock):
     logger.info("Merging stock & catalog")
     df_items = pd.merge(df_catalog, df_stock, on="id", how="left")
     df_items['stock'] = df_items['stock'].fillna(0).astype(int)
