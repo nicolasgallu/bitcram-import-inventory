@@ -78,6 +78,7 @@ def load_data(items):
             logger.info("Upsert Completed.")
             logger.info("Running Procedures.")
             conn.execute(text("""CALL `app_import`.`update_mirror_raw_item_data`()"""))
+            conn.execute(text("""CALL `app_import`.`update_product_catalog_sync`()"""))
             logger.info("Procedures Completed.")
 
     except Exception as e:
