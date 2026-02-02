@@ -12,3 +12,6 @@ INSTANCE_DB=os.getenv("INSTANCE_DB")
 USER_DB=os.getenv("USER_DB")
 PASSWORD_DB=os.getenv("PASSWORD_DB")
 NAME_DB=os.getenv("NAME_DB")
+
+URL=os.getenv("URL")
+SECRET=os.getenv("SECRET")

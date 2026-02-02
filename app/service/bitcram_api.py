@@ -55,7 +55,7 @@ def get_stock(url_bitcrm, warehouse_id, token):
 
     stock = stock_response.json().get("items", [])
     df_stock = pd.DataFrame([
-        {"id": str(item.get("product", {}).get("id")),
+        {"id": str(item.get("product_id")),
          "stock": item.get("product_balance", 0)
         } 
         for item in stock
@@ -64,12 +64,25 @@ def get_stock(url_bitcrm, warehouse_id, token):
     return df_stock
 #------------------------------------------------------------------
 
-def get_items_complete(df_catalog, df_stock):
+def get_items_complete(df_catalog, df_stock, old_data):
+    """"""
     logger.info("Merging stock & catalog")
     df_items = pd.merge(df_catalog, df_stock, on="id", how="left")
     df_items['stock'] = df_items['stock'].fillna(0).astype(int)
+
+    if old_data is not None: #si tenemos datos ya en DB entonces cruzamos y filtramos solo los casos con diferencia en el campo Stock.
+
+        df_items = pd.merge(df_items, old_data, on="id", how="left")
+
+        df_items['prev_stock'] = df_items['prev_stock'].fillna(-1)
+        df_items['prev_data'] = df_items['prev_data'].fillna("n/a")
+
+        df_items['price'] = df_items['data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(0)
+        df_items['prev_price'] = df_items['prev_data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(-1)
+
+        df_items = df_items[(df_items['stock'] != df_items['prev_stock']) | (df_items['price'] != df_items['prev_price'])]
+
     df_items['updated_at'] = datetime.datetime.now(datetime.timezone.utc)
     items = df_items.to_dict(orient='records')
     logger.info("Merge Completed")
     return items
-

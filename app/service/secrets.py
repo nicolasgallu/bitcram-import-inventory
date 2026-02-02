@@ -1,6 +1,6 @@
 from google.cloud import secretmanager
-from app.settings.config import PROJECT_ID, SECRET_ID
 from app.utils.logger import logger
+from app.settings.config import PROJECT_ID, SECRET_ID
 
 def bitcram_secrets():
     logger.info("Getting secrets from Bitcram Account")
@@ -15,4 +15,3 @@ def bitcram_secrets():
     else:
         logger.error("Failed to get secrets from Bitcram")
         return None
-    
