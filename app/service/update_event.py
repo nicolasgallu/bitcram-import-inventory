@@ -37,7 +37,9 @@ async def sending_update_async(published_items):
 def sending_update(items):
     """Punto de entrada compatible con tu código actual"""
     
-    items_id = tuple([i.get('id') for i in items])
+    items_id = tuple([int(i.get('id')) for i in items])
+    if len(items_id) == 1:
+        items_id = (str(items_id).replace(",",""))
     published_items = get_publish_items(items_id)
     
     if not published_items:

@@ -31,7 +31,6 @@ def get_publish_items(item_id):
             """)
         )
         data = [dict(row) for row in result.mappings()]
-        logger.info(data)
         if data:
             logger.info("Data extraction completed.")
             return data
