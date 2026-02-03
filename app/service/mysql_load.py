@@ -18,6 +18,28 @@ def getconn():
 engine = create_engine("mysql+pymysql://",creator=getconn )
 
 
+
+#LOGICA PARA ACCEDER AL MELI ID
+def get_publish_items(item_id):
+    """"""
+    with engine.begin() as conn:
+        logger.info(f"Extracting items id (filtering cases with meli id)")
+        result = conn.execute(
+            text(f"""
+                SELECT id FROM app_import.product_catalog_sync
+                WHERE id in {item_id} and meli_id is not null;
+            """)
+        )
+        data = [dict(row) for row in result.mappings()]
+        logger.info(data)
+        if data:
+            logger.info("Data extraction completed.")
+            return data
+        else:
+            logger.info("Data extraction failed.")
+            return None
+
+
 def get_item_data():
     """"""
     with engine.begin() as conn:
@@ -38,7 +60,7 @@ def get_item_data():
             logger.info("Data extraction completed.")
             return df_stock
         else:
-            logger.info("Data extraction failed.")
+            logger.info("Non Data to extract.")
             return None
 
 
