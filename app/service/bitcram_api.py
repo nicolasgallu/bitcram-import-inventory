@@ -12,7 +12,7 @@ def get_checkout(url_bitcrm, checkout_number, token):
         headers={"Authorization": f"Bearer {token}"},
         params={"where": json.dumps({"checkouts.checkout_number": checkout_number})}
     )
-    checkout_resp.raise_for_status()
+    logger.info(checkout_resp.raise_for_status())
     checkout = checkout_resp.json().get("items", [])[0]
     checkout_id = checkout.get("id")
     warehouse_id = checkout.get("warehouse", {}).get("id")
@@ -36,8 +36,24 @@ def get_price_list(url_bitcrm, checkout_id, token):
          "data":json.dumps(i)
          } 
          for i in catalog])
+    logger.info(catalog[0])
     logger.info("df catalog (from price list) created.")
     return df_catalog
+
+
+#def get_costs_list(url_bitcrm, token):
+#    response = requests.get(f"{url_bitcrm}/api/price_lists/index", 
+#                            headers={"Authorization": f"Bearer {token}"})
+#
+#    print(response.json())
+#    
+#
+#def get_costs_list(url_bitcrm, token):
+#    response = requests.get(f"{url_bitcrm}/api/price_lists/index", 
+#                            headers={"Authorization": f"Bearer {token}"})
+#
+#    print(response.json())
+#
 
 
 #------------------------------------------------------------------
@@ -71,15 +87,12 @@ def get_items_complete(df_catalog, df_stock, old_data):
     df_items['stock'] = df_items['stock'].fillna(0).astype(int)
 
     if old_data is not None: #si tenemos datos ya en DB entonces cruzamos y filtramos solo los casos con diferencia en el campo Stock.
-
         df_items = pd.merge(df_items, old_data, on="id", how="left")
-
         df_items['prev_stock'] = df_items['prev_stock'].fillna(-1)
-        df_items['prev_data'] = df_items['prev_data'].fillna("n/a")
-
+        df_items['prev_data'] = df_items['prev_data'].fillna(json.dumps({'price':-1}))
         df_items['price'] = df_items['data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(0)
         df_items['prev_price'] = df_items['prev_data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(-1)
-
+        #SOLO PROCESAMOS AQUELLOS CON DIFERENCIAS.
         df_items = df_items[(df_items['stock'] != df_items['prev_stock']) | (df_items['price'] != df_items['prev_price'])]
 
     df_items['updated_at'] = datetime.datetime.now(datetime.timezone.utc)

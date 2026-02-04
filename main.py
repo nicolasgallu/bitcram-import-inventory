@@ -22,7 +22,7 @@ df_stock = get_stock(URL_BITCRAM, warehouse_id, token)
 #5 creamos diccionario completo.
 items = get_items_complete(df_catalog, df_stock, previous_data)
 
-##6 cargamos los casos actualizados en DB y obtenemos ID para notificacion posterior.
+#6 cargamos los casos actualizados en DB y obtenemos ID para notificacion posterior.
 if items != []: 
     load_data(items)
     sending_update(items)
