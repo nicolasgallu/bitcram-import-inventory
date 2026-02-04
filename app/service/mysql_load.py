@@ -74,6 +74,7 @@ def load_data(items):
                     id INT, 
                     data JSON,
                     stock INT,
+                    cost INT,
                     updated_at DATETIME,
                     PRIMARY KEY (id)
                 ) ENGINE=InnoDB;
@@ -82,23 +83,23 @@ def load_data(items):
 
             logger.info(f"Paso 2/3: Insertando {len(items)} registros en la tabla temporal.")
             conn.execute(text("""
-                INSERT INTO temp_items_data (id, data, stock, updated_at) 
-                VALUES (:id, :data, :stock, :updated_at)
+                INSERT INTO temp_items_data (id, data, stock, cost, updated_at) 
+                VALUES (:id, :data, :stock, :cost, :updated_at)
             """), items)
 
 
             logger.info("Paso 3/3: Ejecutando UPSERT masivo desde tabla temporal.")
             conn.execute(text("""
-                INSERT INTO bitcram.raw_item_data (id, data, stock, updated_at)
-                SELECT id, data, stock, updated_at FROM temp_items_data
+                INSERT INTO bitcram.raw_item_data (id, data, stock, cost, updated_at)
+                SELECT id, data, stock, cost, updated_at FROM temp_items_data
                 ON DUPLICATE KEY UPDATE
                     data = VALUES(data),
                     stock = VALUES(stock),
+                    cost = VALUES(cost),
                     updated_at = VALUES(updated_at);
             """))
             logger.info("Upsert Completed.")
             logger.info("Running Procedures.")
-            conn.execute(text("""CALL `app_import`.`update_mirror_raw_item_data`()"""))
             conn.execute(text("""CALL `app_import`.`update_product_catalog_sync`()"""))
             logger.info("Procedures Completed.")
 

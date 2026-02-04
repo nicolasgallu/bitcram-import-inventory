@@ -3,9 +3,10 @@ import json
 import pandas as pd
 import datetime
 from app.utils.logger import logger
+from app.settings.config import URL_BITCRAM, CHECKOUT
 
 def get_checkout(url_bitcrm, checkout_number, token):
-
+    """"""
     logger.info("Requesting checkout & warehouse info.")
     checkout_resp = requests.get(
         f"{url_bitcrm}/api/checkouts/index",
@@ -23,7 +24,7 @@ def get_checkout(url_bitcrm, checkout_number, token):
 #------------------------------------------------------------------
 
 def get_price_list(url_bitcrm, checkout_id, token):
-    
+    """"""
     logger.info("Requesting price list info.")
     catalog_response = requests.get(
         f"{url_bitcrm}/api/checkouts/index/{checkout_id}/price_list",
@@ -36,30 +37,32 @@ def get_price_list(url_bitcrm, checkout_id, token):
          "data":json.dumps(i)
          } 
          for i in catalog])
-    logger.info(catalog[0])
-    logger.info("df catalog (from price list) created.")
+    logger.info("df catalog created.")
     return df_catalog
-
-
-#def get_costs_list(url_bitcrm, token):
-#    response = requests.get(f"{url_bitcrm}/api/price_lists/index", 
-#                            headers={"Authorization": f"Bearer {token}"})
-#
-#    print(response.json())
-#    
-#
-#def get_costs_list(url_bitcrm, token):
-#    response = requests.get(f"{url_bitcrm}/api/price_lists/index", 
-#                            headers={"Authorization": f"Bearer {token}"})
-#
-#    print(response.json())
-#
 
 
 #------------------------------------------------------------------
 
-def get_stock(url_bitcrm, warehouse_id, token):
+def get_costs_list(url_bitcrm, token):
+    """"""
+    response = requests.get(f"{url_bitcrm}/api/cost_list_items/index", 
+                            headers={"Authorization": f"Bearer {token}"})
+    
+    response.raise_for_status()
+    costs = response.json().get('items')
+    df_costs = pd.DataFrame([
+        {"id": str(item.get("product_id")),
+         "cost": item.get("cost", 0)
+        } 
+        for item in costs
+    ])
+    logger.info("df costs created.")
+    return df_costs
 
+#------------------------------------------------------------------
+
+def get_stock(url_bitcrm, warehouse_id, token):
+    """"""
     logger.info("Requesting stock info.")
     stock_response = requests.get(
         f"{url_bitcrm}/api/stock_items/index",
@@ -80,19 +83,34 @@ def get_stock(url_bitcrm, warehouse_id, token):
     return df_stock
 #------------------------------------------------------------------
 
-def get_items_complete(df_catalog, df_stock, old_data):
-    """"""
-    logger.info("Merging stock & catalog")
+def get_items_complete(previous_data, token):
+    """ """
+
+    #1 obtenemos checkout & warehouse id
+    checkout_id, warehouse_id = get_checkout(URL_BITCRAM, CHECKOUT, token)
+    #2 obtenemos listado de productos
+    df_catalog = get_price_list(URL_BITCRAM, checkout_id, token)
+    #3 obtenemos costos de productos
+    df_costs = get_costs_list(URL_BITCRAM, token)
+    #4 obtenemos stock de productos
+    df_stock = get_stock(URL_BITCRAM, warehouse_id, token)
+
+    #5 procesamos nuevos.
+    logger.info("Merging stock")
     df_items = pd.merge(df_catalog, df_stock, on="id", how="left")
     df_items['stock'] = df_items['stock'].fillna(0).astype(int)
 
-    if old_data is not None: #si tenemos datos ya en DB entonces cruzamos y filtramos solo los casos con diferencia en el campo Stock.
-        df_items = pd.merge(df_items, old_data, on="id", how="left")
+    logger.info("Merging costs")
+    df_items = pd.merge(df_items, df_costs, on="id", how="left")
+    df_items['cost'] = df_items['cost'].fillna(0).astype(int)
+
+    if previous_data is not None: #si tenemos datos ya en DB entonces cruzamos y filtramos solo los casos con diferencia en el campo Stock u Precio.
+        logger.info("Merging previous data")
+        df_items = pd.merge(df_items, previous_data, on="id", how="left")
         df_items['prev_stock'] = df_items['prev_stock'].fillna(-1)
         df_items['prev_data'] = df_items['prev_data'].fillna(json.dumps({'price':-1}))
         df_items['price'] = df_items['data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(0)
         df_items['prev_price'] = df_items['prev_data'].apply(lambda x: json.loads(x) if isinstance(x, str) else x).str.get('price').fillna(-1)
-        #SOLO PROCESAMOS AQUELLOS CON DIFERENCIAS.
         df_items = df_items[(df_items['stock'] != df_items['prev_stock']) | (df_items['price'] != df_items['prev_price'])]
 
     df_items['updated_at'] = datetime.datetime.now(datetime.timezone.utc)

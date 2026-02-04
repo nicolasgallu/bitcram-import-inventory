@@ -15,3 +15,6 @@ NAME_DB=os.getenv("NAME_DB")
 
 URL=os.getenv("URL")
 SECRET=os.getenv("SECRET")
+
+TOKEN_WHAPI=os.getenv("TOKEN_WHAPI")
+PHONE=os.getenv("PHONE")
