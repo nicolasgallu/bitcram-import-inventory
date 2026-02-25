@@ -5,6 +5,7 @@ import datetime
 from app.utils.logger import logger
 from app.settings.config import URL_BITCRAM, CHECKOUT
 
+
 def get_checkout(url_bitcrm, checkout_number, token):
     """"""
     logger.info("Requesting checkout & warehouse info.")

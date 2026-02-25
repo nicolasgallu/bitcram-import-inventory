@@ -35,9 +35,7 @@ def get_publish_items(item_id):
             logger.info("Data extraction completed.")
             return data
         else:
-            logger.info("Data extraction failed.")
-            return None
-
+            return []
 
 def get_item_data():
     """"""
