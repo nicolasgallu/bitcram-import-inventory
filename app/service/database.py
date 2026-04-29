@@ -87,7 +87,7 @@ def get_last_update():
                 FROM bitcram.raw_item_data
             """)
         )
-        data = [dict(row) for row in result.mappings()][0]
+        data = [dict(row) for row in result.mappings()][0].get('updated_at')
         if data:
             logger.info("Data extraction completed.")
             return data
