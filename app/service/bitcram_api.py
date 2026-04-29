@@ -58,7 +58,7 @@ def get_updated_item(last_updated_at):
 def get_updated_stock(last_updated_at):
     """
     """
-    warehouse_id = aux_get_checkout(URL_BITCRAM, CHECKOUT, TOKEN)
+    warehouse_id = aux_get_checkout()
 
     response = requests.get(
         f"{URL_BITCRAM}/api/stock_items/index/actions/updated",
