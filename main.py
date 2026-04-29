@@ -1,17 +1,14 @@
-from app.service.secrets import bitcram_secrets
-from app.service.bitcram_api import get_items_complete
-from app.service.mysql_load import load_data,get_item_data
-from app.service.update_event import sending_update
+from app.service.bitcram_api import get_updated_item, get_updated_stock, get_updated_price
+from app.service.database import call_procedure,get_last_update
 from app.service.notifications import enviar_mensaje_whapi
 from app.utils.logger import logger
 
 try:
-    previous_data = get_item_data()
-    token = bitcram_secrets()
-    items = get_items_complete(previous_data, token)
-    if items != []: 
-        load_data(items)
-        sending_update(items)
+    last_updated_at = get_last_update()
+    get_updated_item(last_updated_at)
+    get_updated_stock(last_updated_at)
+    get_updated_price(last_updated_at)
+    call_procedure()
 
 except Exception as e:
     message = f"Fallo a la hora de actualizar inventario: {e}"

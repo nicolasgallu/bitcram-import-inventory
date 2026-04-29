@@ -12,6 +12,5 @@ def enviar_mensaje_whapi(mensaje):
         "content-type": "application/json",
         "authorization": f"Bearer {TOKEN_WHAPI}"
     }
-    
     res = requests.post(url, json=payload, headers=headers)
     return res.json()

@@ -1,6 +1,6 @@
 import asyncio
 import aiohttp
-from app.service.mysql_load import get_publish_items
+from app.service.database import get_publish_items
 from app.utils.logger import logger
 from app.settings.config import URL, SECRET
 
