@@ -18,7 +18,6 @@ def aux_get_checkout():
         headers=headers,
         params={"where": json.dumps({"checkouts.checkout_number": CHECKOUT})}
     )
-    logger.info(checkout_resp.raise_for_status())
     checkout = checkout_resp.json().get("items", [])[0]
     warehouse_id = checkout.get("warehouse", {}).get("id")
     logger.info("checkout & warehouse created.")
