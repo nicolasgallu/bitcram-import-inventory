@@ -72,6 +72,7 @@ def call_procedure():
         with engine.begin() as conn:
             logger.info("Running Procedure.")
             conn.execute(text("""CALL app_import.update_product_catalog_sync()"""))
+            conn.execute(text("""CALL tienda_nube.sync_new_items()"""))
             logger.info("Procedures Completed.")
 
 
