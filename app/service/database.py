@@ -2,6 +2,8 @@ from app.utils.logger import logger
 from sqlalchemy import create_engine, text
 from google.cloud.sql.connector import Connector
 from app.settings.config import INSTANCE_DB, USER_DB, PASSWORD_DB, NAME_DB
+import datetime as dt
+
 
 connector = Connector() 
 
@@ -80,7 +82,7 @@ def call_procedure():
 def get_last_update():
     """"""
     with engine.begin() as conn:
-        logger.info("Extracting first update date from raw_item_data")
+        logger.info("Extracting last update date from raw_item_data")
         result = conn.execute(
             text(f"""
                 SELECT 
@@ -91,6 +93,7 @@ def get_last_update():
         data = [dict(row) for row in result.mappings()][0].get('updated_at')
         if data:
             logger.info("Data extraction completed.")
+            data = data - dt.timedelta(days=+2)
             return data
         else:
             return None
