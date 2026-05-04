@@ -80,11 +80,11 @@ def call_procedure():
 def get_last_update():
     """"""
     with engine.begin() as conn:
-        logger.info("Extracting last update date from raw_item_data")
+        logger.info("Extracting first update date from raw_item_data")
         result = conn.execute(
             text(f"""
                 SELECT 
-                max(updated_at) as updated_at
+                min(updated_at) as updated_at
                 FROM bitcram.raw_item_data
             """)
         )
