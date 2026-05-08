@@ -1,6 +1,7 @@
 from google.cloud import secretmanager
 from app.utils.logger import logger
-from app.settings.config import PROJECT_ID, SECRET_ID
+from app.settings.config import PROJECT_ID, SECRET_ID,SECRET_MELI_ID, SECRET_TNUBE_ID
+import json 
 
 def bitcram_secrets():
     logger.info("Getting secrets from Bitcram Account")
@@ -14,4 +15,36 @@ def bitcram_secrets():
         return token
     else:
         logger.error("Failed to get secrets from Bitcram")
+        return None
+    
+
+def meli_secrets():
+    logger.info("Getting secrets from Meli Account")
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{PROJECT_ID}/secrets/{SECRET_MELI_ID}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    response = response.payload.data.decode("UTF-8")
+    response = json.loads(response)
+    token = response['questions']['TOKEN']
+    if token:
+        logger.info("Secrets from Meli obtained")
+        return token
+    else:
+        logger.error("Failed to get secrets from Meli")
+        return None
+    
+def tienda_nube_secrets():
+    logger.info("Getting secrets from TiendaNube Account")
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{PROJECT_ID}/secrets/{SECRET_TNUBE_ID}/versions/latest"
+    response = client.access_secret_version(request={"name": name})
+    response = response.payload.data.decode("UTF-8")
+    response = json.loads(response)
+    token = response['token']
+    user_id = response['user_id']
+    if token and user_id:
+        logger.info("Secrets from TiendaNube obtained")
+        return token, user_id
+    else:
+        logger.error("Failed to get secrets from TiendaNube")
         return None

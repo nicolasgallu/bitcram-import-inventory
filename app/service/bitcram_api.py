@@ -74,8 +74,8 @@ def get_updated_stock(last_updated_at):
     data = [{'id': i.get('product_id'), 'stock': i.get('product_balance'), 'updated_at':updated_at} for i in stock]
     if data != []:
         fields = 'id, stock, updated_at'    
-        load_data(fields, data, 'stock')
         sending_update(data)
+        load_data(fields, data, 'stock')
     
 
 def get_updated_price(last_updated_at):

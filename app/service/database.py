@@ -19,18 +19,49 @@ def getconn():
 engine = create_engine("mysql+pymysql://",creator=getconn )
 
 
-def get_publish_items(item_id):
+def get_published_items(data):
     """"""
     with engine.begin() as conn:
-        logger.info(f"Extracting items id (filtering cases with meli id)")
-        result = conn.execute(
-            text(f"""
+
+        logger.info("Creating temporary table app_import.temp_item_stock_updated.")
+        conn.execute(text("""CREATE TEMPORARY TABLE app_import.temp_item_stock_updated (
+                     id int,
+                     new_stock int
+                     )
+                     """))
+        
+        logger.info("Inserting Data inside table app_import.temp_item_stock_updated.")        
+        conn.execute(text("""INSERT INTO app_import.temp_item_stock_updated (id, new_stock)
+                     values (:id, :new_stock)
+                     """), data)
+
+        logger.info("Joining and returning items with updated stock.")        
+        result = conn.execute(text(
+                """
                 SELECT 
-                id 
+                    id,
+                    meli_id,
+                    tnube_id,
+                    stock,
+                    new_stock,
+                    variant_id
                 FROM app_import.product_catalog_sync
-                WHERE id in {item_id} and meli_id is not null;
-            """)
-        )
+                LEFT JOIN app_import.temp_item_stock_updated using (id)
+                LEFT JOIN (
+                SELECT 
+                    id as attribute_id,
+                    item_id as id
+                FROM tienda_nube.attributes) a using (id)
+                LEFT JOIN (
+                SELECT 
+                    attribute_id,
+                    product_id as tnube_id,
+                    variant_id
+                FROM 
+                    tienda_nube.product_status) as b using (attribute_id)
+                WHERE stock != new_stock and (meli_id is not null or tnube_id is not null)
+                """))
+
         data = [dict(row) for row in result.mappings()]
         if data:
             logger.info("Data extraction completed.")
