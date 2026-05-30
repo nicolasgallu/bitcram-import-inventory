@@ -106,6 +106,7 @@ def call_procedure():
             logger.info("Running Procedure.")
             conn.execute(text("""CALL app_import.update_product_catalog_sync()"""))
             conn.execute(text("""CALL tienda_nube.sync_new_items()"""))
+            conn.execute(text("""CALL mercadolibre.insert_new_items()"""))
             logger.info("Procedures Completed.")
 
 
