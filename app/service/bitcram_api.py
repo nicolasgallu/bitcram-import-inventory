@@ -23,20 +23,6 @@ def aux_get_checkout():
     logger.info("checkout & warehouse created.")
     return warehouse_id
 
-def aux_item_cost(product_id):
-    response = requests.get(
-    f"{URL_BITCRAM}/api/cost_list_items/index",
-    headers=headers,
-    params={
-            "where": json.dumps({
-            "product_id": product_id})}   
-    )
-    cost = response.json().get('items')
-    data = [{'id': i.get('product_id'), 'cost': int(i.get('cost'))} for i in cost]
-    if data != []:
-        fields = 'id, cost'    
-        load_data(fields, data, 'item cost')
-
 def get_updated_item(last_updated_at):
     """
     """   
@@ -50,9 +36,6 @@ def get_updated_item(last_updated_at):
     if data != []:
         fields = 'id, data, updated_at'    
         load_data(fields, data, 'items data')
-        products_id = [product.get("id") for product in data]
-        aux_item_cost(products_id)
-
 
 def get_updated_stock(last_updated_at):
     """
@@ -77,6 +60,19 @@ def get_updated_stock(last_updated_at):
         sending_update(data)
         load_data(fields, data, 'stock')
     
+def get_updated_cost(last_updated_at):
+    """
+    """   
+    response = requests.get(
+        f"{URL_BITCRAM}/api/cost_list_items/index/actions/updated",
+        headers=headers,params={"since": last_updated_at})
+    costs_raw = response.json().get('items')
+    updated_at = response.json().get('last_update')
+    data = [{"id":i.get('product_id'), "cost":i.get('cost'), "updated_at":updated_at} for i in costs_raw]
+
+    if data != []:
+        fields = 'id, cost, updated_at'    
+        load_data(fields, data, 'cost data')
 
 def get_updated_price(last_updated_at):
     """"""
