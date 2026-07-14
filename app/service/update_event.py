@@ -10,17 +10,25 @@ def sending_update(data:list):
     lst_items = [{'id': i.get('id'), 'new_stock': 0 if i.get('stock')<0 else i.get('stock')} for i in data]
     published_items = get_published_items(lst_items)
     
+
     def _item_status(meli_id, token):
         logger.info(f"Validating current status for item: {meli_id}")
+
         headers = {"Authorization": f"Bearer {token}"}
         response = requests.get(
-            f"https://api.mercadolibre.com/items/{meli_id}", 
+            f"https://api.mercadolibre.com/items/{meli_id}",
             headers=headers
         )
-        status = response.json().get('status')
-        sub_status = next(iter(response.json().get('sub_status') or []), 'good')
-        logger.info(f"status output: {status} : {sub_status}")
-        return status,sub_status
+
+        data = response.json()
+        status = data.get("status")
+        sub_status = next(iter(data.get("sub_status") or []), "good")
+        variations_count = len(data.get("variations", []))
+
+        logger.info(
+            f"status output: {status} : {sub_status} | variations: {variations_count}"
+        )
+        return status, sub_status, variations_count
 
     def _update_stock_meli():
         """Update MercadoLibre item"""  
@@ -30,10 +38,14 @@ def sending_update(data:list):
             new_data = {"available_quantity": item.get('new_stock')}
             meli_id = item.get('meli_id')
 
-            status,sub_status = _item_status(meli_id, token)
+            status,sub_status,variations_count = _item_status(meli_id, token)
 
             if status == 'under_review' and sub_status == 'forbidden' or status == 'inactive' and sub_status == 'pending_documentation':
                 logger.info("Product Forbidden, passing..")
+                continue
+
+            if variations_count >0:
+                logger.info("Product with variations, passing..")
                 continue
 
             for i in range(5):
