@@ -40,7 +40,7 @@ def sending_update(data:list):
 
             status,sub_status,variations_count = _item_status(meli_id, token)
 
-            if status == 'under_review' and sub_status == 'forbidden' or status == 'inactive' and sub_status == 'pending_documentation':
+            if status == 'under_review' and sub_status == 'forbidden' or status == 'inactive':
                 logger.info("Product Forbidden, passing..")
                 continue
 
