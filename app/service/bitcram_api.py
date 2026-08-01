@@ -86,14 +86,16 @@ def get_updated_price(last_updated_at):
     )
     prices = response.json().get('items')
     updated_at = response.json().get('last_update')
-    prices_meli_raw = [{'id':i.get('product_id'),'price_mercadolibre':i.get('price'),'updated_at':updated_at} for i in prices if i.get('price_list_id') == 251]
+    prices_meli_raw = [{'id':i.get('product_id'),'price_mercadolibre':i.get('price'),'updated_at':updated_at,'price_mercadolibre_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 251]
     prices_meli = [i for i in prices_meli_raw if i.get('price_mercadolibre') is not None]
-    prices_tnube_raw = [{'id':i.get('product_id'),'price_tienda_nube':i.get('price'),'updated_at':updated_at} for i in prices if i.get('price_list_id') == 253]
+    prices_tnube_raw = [{'id':i.get('product_id'),'price_tienda_nube':i.get('price'),'updated_at':updated_at, 'price_tienda_nube_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 253]
     prices_tnube = [i for i in prices_tnube_raw if i.get('price_tienda_nube') is not None]
 
     if prices_meli != []:
-        fields = 'id, price_mercadolibre, updated_at'    
+        fields = 'id, price_mercadolibre, updated_at, price_mercadolibre_updated_at'
         load_data(fields, prices_meli, 'prices (meli)')
     if prices_tnube != []:
-        fields = 'id, price_tienda_nube, updated_at'    
+        fields = 'id, price_tienda_nube, updated_at, price_tienda_nube_updated_at'    
         load_data(fields, prices_tnube, 'prices (tienda nube)')
+    
+
