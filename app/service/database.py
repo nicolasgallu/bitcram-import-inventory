@@ -24,43 +24,81 @@ def get_published_items(data):
     with engine.begin() as conn:
 
         logger.info("Creating temporary table app_import.temp_item_stock_updated.")
-        conn.execute(text("""CREATE TEMPORARY TABLE app_import.temp_item_stock_updated (
-                     id int,
-                     new_stock int
-                     )
-                     """))
+        conn.execute(text("""
+        CREATE TEMPORARY TABLE app_import.temp_item_stock_updated (
+            id INT,
+            new_stock INT,
+            price_mercadolibre INT,
+            price_tienda_nube INT,
+            price_mercadolibre_updated_at DATETIME,
+            price_tienda_nube_updated_at DATETIME
+        )
+        """))
         
         logger.info("Inserting Data inside table app_import.temp_item_stock_updated.")        
-        conn.execute(text("""INSERT INTO app_import.temp_item_stock_updated (id, new_stock)
-                     values (:id, :new_stock)
-                     """), data)
+        conn.execute(text("""
+        INSERT INTO app_import.temp_item_stock_updated (
+            id, 
+            new_stock, 
+            price_mercadolibre, 
+            price_tienda_nube, 
+            price_mercadolibre_updated_at, 
+            price_tienda_nube_updated_at
+        )
+        VALUES (
+            :id, 
+            :new_stock, 
+            :price_mercadolibre, 
+            :price_tienda_nube, 
+            :price_mercadolibre_updated_at, 
+            :price_tienda_nube_updated_at
+        )
+        """), data)
 
         logger.info("Joining and returning items with updated stock.")        
         result = conn.execute(text(
-                """
-                SELECT 
-                    id,
-                    meli_id,
-                    tnube_id,
-                    stock,
-                    new_stock,
-                    variant_id
-                FROM app_import.product_catalog_sync
-                LEFT JOIN app_import.temp_item_stock_updated using (id)
-                LEFT JOIN (
-                SELECT 
-                    id as attribute_id,
-                    item_id as id
-                FROM tienda_nube.attributes) a using (id)
-                LEFT JOIN (
-                SELECT 
-                    attribute_id,
-                    product_id as tnube_id,
-                    variant_id
-                FROM 
-                    tienda_nube.product_status) as b using (attribute_id)
-                WHERE stock != new_stock and (meli_id is not null or tnube_id is not null)
-                """))
+        """
+        SELECT
+            pcs.id,
+            pcs.meli_id,
+            b.tnube_id,
+            b.variant_id,
+            tisu.new_stock,
+        
+            CASE
+                WHEN tisu.price_mercadolibre_updated_at > pcs.price_meli_updated_at
+                THEN tisu.price_mercadolibre
+                ELSE NULL
+            END AS price_mercadolibre,
+        
+            CASE
+                WHEN tisu.price_tienda_nube_updated_at > pcs.price_tnube_updated_at
+                THEN tisu.price_tienda_nube
+                ELSE NULL
+            END AS price_tienda_nube
+        
+        FROM app_import.product_catalog_sync AS pcs
+        LEFT JOIN app_import.temp_item_stock_updated AS tisu ON pcs.id = tisu.id
+        LEFT JOIN (
+            SELECT
+                id AS attribute_id,
+                item_id AS id
+            FROM tienda_nube.attributes
+        ) AS a
+            ON pcs.id = a.id
+        LEFT JOIN (
+            SELECT
+                attribute_id,
+                product_id AS tnube_id,
+                variant_id
+            FROM tienda_nube.product_status
+        ) AS b ON a.attribute_id = b.attribute_id
+        WHERE 
+        (tisu.new_stock <> pcs.stock OR 
+        tisu.price_mercadolibre_updated_at > pcs.price_meli_updated_at OR 
+        tisu.price_tienda_nube_updated_at > pcs.price_tnube_updated_at ) AND 
+        (pcs.meli_id IS NOT NULL OR b.tnube_id IS NOT NULL);
+        """))
 
         data = [dict(row) for row in result.mappings()]
         if data:
@@ -109,12 +147,26 @@ def call_procedure():
             conn.execute(text("""CALL mercadolibre.insert_new_items()"""))
             logger.info("Procedures Completed.")
 
+def update_last_update(updated_at):
+    """
+    Updates the updated_at field for all rows in bitcram.raw_item_data.
+    """
+    with engine.begin() as conn:
+        logger.info("Updating updated_at in bitcram.raw_item_data.")
 
+        conn.execute(
+            text("""
+                UPDATE bitcram.raw_item_data
+                SET updated_at = :updated_at
+            """),
+            {"updated_at": updated_at},
+        )
+        logger.info("updated_at successfully updated.")
 
 def get_last_update():
     """"""
     with engine.begin() as conn:
-        logger.info("Extracting last update date from raw_item_data")
+        logger.info("Extracting last update date from raw_item_data (with minus 2 days.)")
         result = conn.execute(
             text(f"""
                 SELECT 
@@ -125,7 +177,7 @@ def get_last_update():
         data = [dict(row) for row in result.mappings()][0].get('updated_at')
         if data:
             logger.info("Data extraction completed.")
-            data = data - dt.timedelta(days=+2)
+            data -= dt.timedelta(days=2)
             return data
         else:
             return None
