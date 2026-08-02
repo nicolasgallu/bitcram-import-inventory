@@ -52,9 +52,7 @@ MarkupSafe==3.0.3
 matplotlib-inline==0.2.2
 more-itertools==11.1.0
 multidict==6.7.1
-numpy==2.5.1
 packaging==26.2
-pandas==3.0.5
 parso==0.8.7
 pexpect==4.9.0
 prompt_toolkit==3.0.52
@@ -94,3 +92,5 @@ wcwidth==0.8.1
 widgetsnbextension==4.0.15
 yarl==1.24.2
 zipp==4.1.0
+numpy==2.0.2
+pandas==2.2.3
