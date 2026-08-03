@@ -7,7 +7,9 @@ from app.service.bitcram_api import (
 from app.service.database import call_procedure, get_last_update, update_last_update
 from app.service.update_event import sending_update
 from app.service.notifications import enviar_mensaje_whapi
+from app.service.correct_anomaly import sync_ecommerce
 from app.utils.logger import logger
+import asyncio
 import pandas as pd
 import datetime as dt
 
@@ -41,7 +43,10 @@ try:
     data = df.to_dict(orient="records")
 
     sending_update(data)
+    
     call_procedure()
+
+    asyncio.run(sync_ecommerce())
 
 except Exception as e:
     message = f"Fallo a la hora de actualizar inventario: {e}"

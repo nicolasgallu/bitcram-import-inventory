@@ -181,3 +181,31 @@ def get_last_update():
             return data
         else:
             return None
+
+def get_method(data):
+    """returns a single row of a get sql"""
+    with engine.begin() as conn:
+
+        q_columns = ', '.join(data.get('q_columns'))
+        q_from = data.get('q_from')
+        q_join =  ' '.join(data.get('q_join', ''))
+        q_where  = data.get('q_where', '')
+        q_limit  = data.get('q_limit', '')
+
+        result = conn.execute(
+            text(f"""
+                SELECT 
+                {q_columns} 
+                {q_from} 
+                {q_join} 
+                {q_where} 
+                {q_limit}
+                """)
+            )
+        data = [dict(row) for row in result.mappings()]
+        if data:
+            logger.info("Data extraction completed.")
+            return data
+        else:
+            logger.info("Data extraction failed.")
+            return None
