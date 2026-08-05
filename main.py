@@ -25,7 +25,6 @@ try:
     logger.info(f"Extracting Data from date: {last_updated_at}")
     get_updated_item(last_updated_at)
     get_updated_cost(last_updated_at)
-
     stock = get_updated_stock(last_updated_at)
     prices_meli, prices_tnube = get_updated_price(last_updated_at)
 

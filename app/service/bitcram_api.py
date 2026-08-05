@@ -22,9 +22,11 @@ def aux_get_checkout():
     logger.info("checkout & warehouse created.")
     return warehouse_id
 
-def get_updated_item(last_updated_at):
+def get_updated_item(last_updated_at=None):
     """
     """   
+    warehouse_id = aux_get_checkout()
+    print(warehouse_id)
     response = requests.get(
         f"{URL_BITCRAM}/api/products/index/actions/updated",
         headers=headers,params={"since": last_updated_at})
@@ -34,7 +36,7 @@ def get_updated_item(last_updated_at):
         fields = 'id, data'    
         load_data(fields, data, 'items data')
 
-def get_updated_stock(last_updated_at):
+def get_updated_stock(last_updated_at=None):
     """
     """
     warehouse_id = aux_get_checkout()
@@ -56,7 +58,7 @@ def get_updated_stock(last_updated_at):
         load_data(fields, data, 'stock')
     return data
     
-def get_updated_cost(last_updated_at):
+def get_updated_cost(last_updated_at=None):
     """
     """   
     response = requests.get(
@@ -68,22 +70,30 @@ def get_updated_cost(last_updated_at):
         fields = 'id, cost'    
         load_data(fields, data, 'cost data')
 
-def get_updated_price(last_updated_at):
+def get_updated_price(last_updated_at=None):
     """"""
     response = requests.get(
         f"{URL_BITCRAM}/api/price_list_items/index/actions/updated",
         headers=headers,
         params={"since": last_updated_at,
                 "where": json.dumps({
-                "price_list_id": [251, 253]
+                "price_list_id": [251, 253, 248]
             })}   
     )
     prices = response.json().get('items')
+    prices_base = [{'id':i.get('product_id'), 'price':i.get('price')} for i in prices if i.get('price_list_id') == 248]
+    prices_base = [i for i in prices_base if i.get('price') is not None]
+
     prices_meli_raw = [{'id':i.get('product_id'),'price_mercadolibre':i.get('price'),'price_mercadolibre_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 251]
     prices_meli = [i for i in prices_meli_raw if i.get('price_mercadolibre') is not None]
+
     prices_tnube_raw = [{'id':i.get('product_id'),'price_tienda_nube':i.get('price'), 'price_tienda_nube_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 253]
     prices_tnube = [i for i in prices_tnube_raw if i.get('price_tienda_nube') is not None]
 
+    if prices_base != []:
+        logger.info(f"New updated records from prices (base): {len(prices_base)}")
+        fields = 'id, price'
+        load_data(fields, prices_base, 'prices (mayorista)')
     if prices_meli != []:
         logger.info(f"New updated records from prices meli: {len(prices_meli)}")
         fields = 'id, price_mercadolibre, price_mercadolibre_updated_at'
