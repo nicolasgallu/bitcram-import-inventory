@@ -19,14 +19,12 @@ def aux_get_checkout():
     )
     checkout = checkout_resp.json().get("items", [])[0]
     warehouse_id = checkout.get("warehouse", {}).get("id")
-    logger.info("checkout & warehouse created.")
+    logger.info(f"warehouse obtained: [{warehouse_id}]")
     return warehouse_id
 
 def get_updated_item(last_updated_at=None):
     """
     """   
-    warehouse_id = aux_get_checkout()
-    print(warehouse_id)
     response = requests.get(
         f"{URL_BITCRAM}/api/products/index/actions/updated",
         headers=headers,params={"since": last_updated_at})
@@ -57,6 +55,7 @@ def get_updated_stock(last_updated_at=None):
         fields = 'id, stock'    
         load_data(fields, data, 'stock')
     return data
+
     
 def get_updated_cost(last_updated_at=None):
     """
@@ -80,15 +79,37 @@ def get_updated_price(last_updated_at=None):
                 "price_list_id": [251, 253, 248]
             })}   
     )
+
     prices = response.json().get('items')
-    prices_base = [{'id':i.get('product_id'), 'price':i.get('price')} for i in prices if i.get('price_list_id') == 248]
-    prices_base = [i for i in prices_base if i.get('price') is not None]
 
-    prices_meli_raw = [{'id':i.get('product_id'),'price_mercadolibre':i.get('price'),'price_mercadolibre_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 251]
-    prices_meli = [i for i in prices_meli_raw if i.get('price_mercadolibre') is not None]
+    default_meli = [{
+        'id': None,
+        'price_mercadolibre': None,
+        'price_mercadolibre_updated_at': None
+    }]
 
-    prices_tnube_raw = [{'id':i.get('product_id'),'price_tienda_nube':i.get('price'), 'price_tienda_nube_updated_at':i.get('last_update')} for i in prices if i.get('price_list_id') == 253]
-    prices_tnube = [i for i in prices_tnube_raw if i.get('price_tienda_nube') is not None]
+    default_tnube = [{
+        'id': None,
+        'price_tienda_nube': None,
+        'price_tienda_nube_updated_at': None
+    }]
+
+    prices_base = [
+        {'id':i.get('product_id'), 
+         'price':i.get('price')
+         } for i in prices if i.get('price_list_id') == 248 and i.get('price') is not None]
+
+    prices_meli = [
+        {'id':i.get('product_id'),
+         'price_mercadolibre':i.get('price'),
+         'price_mercadolibre_updated_at':i.get('last_update')
+         } for i in prices if i.get('price_list_id') == 251 and i.get('price') is not None]
+
+    prices_tnube = [
+        {'id':i.get('product_id'),
+         'price_tienda_nube':i.get('price'), 
+         'price_tienda_nube_updated_at':i.get('last_update')
+         } for i in prices if i.get('price_list_id') == 253 and i.get('price') is not None]
 
     if prices_base != []:
         logger.info(f"New updated records from prices (base): {len(prices_base)}")
@@ -103,4 +124,4 @@ def get_updated_price(last_updated_at=None):
         fields = 'id, price_tienda_nube, price_tienda_nube_updated_at'    
         load_data(fields, prices_tnube, 'prices (tienda nube)')
 
-    return prices_meli, prices_tnube
+    return prices_meli or default_meli, prices_tnube or default_tnube

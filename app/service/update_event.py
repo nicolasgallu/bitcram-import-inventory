@@ -112,7 +112,6 @@ def sending_update(data:list):
         return
 
     items_to_update = get_published_items(data)
-
     #si algun price o stock es null, se deja como null y se ignora en la carga del payload.
     
     if items_to_update:

@@ -125,14 +125,14 @@ def load_data(fields:str, data:list, stage:str):
                     to_update_conflict+= f"{i} = values({i.strip()}), "
                     to_update+= f":{i.strip()}, "
 
-            logger.info(f"updating {len(data)} records - stage: {stage}.")
+            logger.info(f"updating {len(data)} records - stage: [{stage}].")
 
             conn.execute(text(f"""
                 INSERT INTO bitcram.raw_item_data ({fields})
                 VALUES({to_update})
                 ON DUPLICATE KEY UPDATE {to_update_conflict}
             """),data)
-            logger.info("Upsert Completed.")
+            logger.info(f"upsert Completed: [{stage}].")
 
     except Exception as e:
         logger.error(f"Error critico en la carga masiva: {str(e)}")
