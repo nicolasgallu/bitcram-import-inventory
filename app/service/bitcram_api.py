@@ -54,8 +54,6 @@ def get_updated_stock(last_updated_at=None):
         logger.info(f"New updated records from stock: {len(data)}")
         fields = 'id, stock'    
         load_data(fields, data, 'stock')
-    return data
-
     
 def get_updated_cost(last_updated_at=None):
     """
@@ -81,18 +79,6 @@ def get_updated_price(last_updated_at=None):
     )
 
     prices = response.json().get('items')
-
-    default_meli = [{
-        'id': None,
-        'price_mercadolibre': None,
-        'price_mercadolibre_updated_at': None
-    }]
-
-    default_tnube = [{
-        'id': None,
-        'price_tienda_nube': None,
-        'price_tienda_nube_updated_at': None
-    }]
 
     prices_base = [
         {'id':i.get('product_id'), 
@@ -123,5 +109,3 @@ def get_updated_price(last_updated_at=None):
         logger.info(f"New updated records from prices tnube: {len(prices_tnube)}")
         fields = 'id, price_tienda_nube, price_tienda_nube_updated_at'    
         load_data(fields, prices_tnube, 'prices (tienda nube)')
-
-    return prices_meli or default_meli, prices_tnube or default_tnube
